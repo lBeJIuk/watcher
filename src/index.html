@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<script src="require.js">
+  require.config({
+    baseUrl: './src',
+  });
+
+</script>
+
+<script>
+  window.globalDeps = new Set();
+  require.onResourceLoad = function (context, map, depArray) {
+    var
+      {name} = map,
+      deps = [],
+      modDeps = []
+     ;
+
+     depArray.forEach(element => {
+      modDeps.push(element.id);
+     });
+
+    if (window.globalDeps.has(name)) {
+      deps = window.globalDeps.get(name);
+    }
+
+    deps = deps.concat(modDeps);
+    window.globalDeps.add(name, deps);
+  }
+
+  setTimeout(()=> {
+    var socket = new WebSocket("ws://localhost:8080/sw")
+      socket.onopen = () => console.log('Connection was established')
+      socket.onerror = (err) => console.log('Error is occured', err)
+      socket.onclose = () => console.log('Connection was closed')
+      socket.onmessage = (ev) => console.log(ev.data)
+  }, 2000);
+</script>
+
+<body>
+  <button id="button">test</button>
+</body>
+<script src="./script.js">
+</script>
+</html>
+
