@@ -67,7 +67,7 @@ func runWatcher(files []string) {
 				if !ok {
 					return
 				}
-				log.Println("modified file:", event.Op)
+				log.Println("modified OP:", event.Op)
 				if (event.Op & fsnotify.Write) == fsnotify.Write {
 					log.Println("modified file:", event.Name)
 					// @TODO trottling
@@ -111,11 +111,14 @@ func getWathedFiles(root string) (files []string, directories []string) {
 }
 
 func ruotineWrite(ws *websocket.Conn) {
-	defer ws.Close()
+	defer func() {
+		ws.Close()
+		log.Println(ws.RemoteAddr())
+	}()
 	for {
 		select {
 		case name := <-changeChan:
-			log.Println("name", name)
+			log.Println("WebSocket message:", name)
 			ws.WriteMessage(websocket.TextMessage, []byte(name))
 		}
 	}

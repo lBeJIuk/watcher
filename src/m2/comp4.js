@@ -1,6 +1,8 @@
 define([
-], function(require, factory) {
+], function() {
   return {
-    console.log('log from comp4', 4);
+    log: function() {
+      console.log('log from comp4', 4);
+    }
   };
 });

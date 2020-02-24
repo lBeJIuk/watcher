@@ -14,7 +14,7 @@
 </script>
 
 <script>
-  window.globalDeps = new Set();
+  window.globalDeps = {};
   require.onResourceLoad = function (context, map, depArray) {
     var
       {name} = map,
@@ -23,24 +23,38 @@
      ;
 
      depArray.forEach(element => {
-      modDeps.push(element.id);
+      modDeps.push('src' + element.url.slice(1));
      });
 
-    if (window.globalDeps.has(name)) {
-      deps = window.globalDeps.get(name);
+    if (typeof window.globalDeps[name] !== 'undefined') {
+      deps = [...window.globalDeps[name]];
     }
 
     deps = deps.concat(modDeps);
-    window.globalDeps.add(name, deps);
+    window.globalDeps[name] = deps;
   }
 
-  setTimeout(()=> {
-    var socket = new WebSocket("ws://localhost:8080/sw")
-      socket.onopen = () => console.log('Connection was established')
-      socket.onerror = (err) => console.log('Error is occured', err)
-      socket.onclose = () => console.log('Connection was closed')
-      socket.onmessage = (ev) => console.log(ev.data)
-  }, 2000);
+  var socket = new WebSocket('ws://localhost:8080/sw');
+  socket.onopen = () => console.log('Connection was established');
+  socket.onerror = (err) => console.log('Error is occured', err);
+  socket.onclose = () => console.log('Connection was closed');
+  socket.onmessage = (ev) => {
+    var toUndef = [];
+
+    toUndef.push((ev.data.slice(4)).split('.')[0]);
+
+    for (var name in window.globalDeps) {
+      var map = window.globalDeps[name];
+      if (map.indexOf(ev.data) !== -1) {
+        toUndef.push(name);
+      }
+    }
+
+    toUndef.forEach(element => {
+      require.undef(element);
+      console.log('Reseted:', element);
+    });
+  }
 </script>
 
 <body>
