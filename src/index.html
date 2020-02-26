@@ -39,21 +39,29 @@
   socket.onerror = (err) => console.log('Error is occured', err);
   socket.onclose = () => console.log('Connection was closed');
   socket.onmessage = (ev) => {
-    var toUndef = [];
-
-    toUndef.push((ev.data.slice(4)).split('.')[0]);
-
-    for (var name in window.globalDeps) {
-      var map = window.globalDeps[name];
-      if (map.indexOf(ev.data) !== -1) {
-        toUndef.push(name);
-      }
-    }
+    var toUndef = getDeps( ev.data.slice(4).split('.')[0] );
 
     toUndef.forEach(element => {
       require.undef(element);
       console.log('Reseted:', element);
     });
+  }
+
+  function getDeps(depName, deps = []) {
+    if (deps.indexOf(depName) === -1) {
+      deps.push(depName);
+    }
+
+    for (var elementName in globalDeps) {
+      if (
+        globalDeps[elementName].indexOf(depName) !== -1 // depName depends on element
+        && deps.indexOf(elementName) === -1 // Is not already saved
+        ) {
+          deps.push(elementName);
+          deps = getDeps(elementName, deps);
+      }
+    }
+    return deps;
   }
 </script>
 
