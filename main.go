@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"net/http"
 
@@ -29,16 +30,16 @@ func main() {
 	}
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	http.HandleFunc("/sw", serveServiceWorker)
+	http.HandleFunc("/ws", serveServiceWorker)
 
 	// dev
-	fs := http.FileServer(http.Dir("src"))
-	http.Handle("/", fs)
+	//fs := http.FileServer(http.Dir("src"))
+	//http.Handle("/", fs)
 	// dev
 
 	fmt.Println("Watching:", location)
-	files, _ := getWathedFiles(location)
-	go runWatcher(files)
+	files, _ := getWatchedFiles(location)
+	go runWatcher(files, location)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -53,7 +54,7 @@ func serveServiceWorker(w http.ResponseWriter, r *http.Request) {
 	go ruotineWrite(ws)
 }
 
-func runWatcher(files []string) {
+func runWatcher(files []string, location string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		fmt.Println("ERROR", err)
@@ -71,7 +72,7 @@ func runWatcher(files []string) {
 				if (event.Op & fsnotify.Write) == fsnotify.Write {
 					log.Println("modified file:", event.Name)
 					// @TODO trottling
-					changeChan <- event.Name
+					changeChan <- event.Name[len(location)+1:]
 				}
 				// @TODO try to restore file when -> rename -> chmod -> write
 				// for vim
@@ -95,7 +96,7 @@ func runWatcher(files []string) {
 	<-done
 }
 
-func getWathedFiles(root string) (files []string, directories []string) {
+func getWatchedFiles(root string) (files []string, directories []string) {
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			directories = append(directories, path)
@@ -119,7 +120,11 @@ func ruotineWrite(ws *websocket.Conn) {
 		select {
 		case name := <-changeChan:
 			log.Println("WebSocket message:", name)
-			ws.WriteMessage(websocket.TextMessage, []byte(name))
+			ws.SetWriteDeadline(time.Now().Add(1 * time.Second))
+			err := ws.WriteMessage(websocket.TextMessage, []byte(name))
+			if err != nil {
+				log.Println("error:", err)
+			}
 		}
 	}
 }
