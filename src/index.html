@@ -23,7 +23,7 @@
      ;
 
      depArray.forEach(element => {
-      modDeps.push('src' + element.url.slice(1));
+      modDeps.push(element.name);
      });
 
     if (typeof window.globalDeps[name] !== 'undefined') {
@@ -34,12 +34,12 @@
     window.globalDeps[name] = deps;
   }
 
-  var socket = new WebSocket('ws://localhost:8080/sw');
+  var socket = new WebSocket('ws://localhost:8080/ws');
   socket.onopen = () => console.log('Connection was established');
   socket.onerror = (err) => console.log('Error is occured', err);
   socket.onclose = () => console.log('Connection was closed');
   socket.onmessage = (ev) => {
-    var toUndef = getDeps( ev.data.slice(4).split('.')[0] );
+    var toUndef = getDeps( ev.data.split('.')[0] );
 
     toUndef.forEach(element => {
       require.undef(element);

@@ -24,7 +24,7 @@ func main() {
 	if len(os.Args) != 2 {
 		// log.Fatal("You need set location as a first argument")
 		// dev
-		location = "./src"
+		location = "src"
 	} else {
 		location = os.Args[1]
 	}
